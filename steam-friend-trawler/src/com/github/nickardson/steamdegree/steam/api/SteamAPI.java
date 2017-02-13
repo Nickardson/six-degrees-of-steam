@@ -80,4 +80,55 @@ public class SteamAPI {
 	// TODO: GetPlayerSummaries
 	// http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=XXXXXXXXXXX&steamids=12345,321312321,312321323
 	// Up to 100
+	public static List<SteamPlayerSummary> GetPlayerSummaries(long[] ids) {
+		if (ids.length > 100) {
+			throw new IllegalArgumentException("Maximum of 100 ids are allowed, got " + ids.length);
+		}
+		
+		CloseableHttpClient client = HttpClients.createDefault();
+		HttpGet req = new HttpGet();
+		try {
+			// build a comma separated list of ids.
+			StringBuilder idList = new StringBuilder(ids.length * 17); // most.. all? ids are 17 characters in length.
+			for (int i = 0; i < ids.length; i++) {
+				idList.append(ids[i]);
+				if (i < ids.length - 1) {
+					idList.append(',');
+				}
+			}
+			
+			URIBuilder uriBuilder = new URIBuilder(HOST)
+					.setPath("/ISteamUser/GetPlayerSummaries/v0002/")
+					.setParameter("key", API_KEY)
+					.setParameter("format", "json")
+					.setParameter("steamids", idList.toString());
+			req.setURI(uriBuilder.build());
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		
+		try {
+			CloseableHttpResponse response = client.execute(req);
+			
+			List<SteamPlayerSummary> friendList = new ArrayList<>();
+			
+			try {
+				HttpEntity entity = response.getEntity();
+				JSONObject json = new JSONObject(IOUtils.toString(entity.getContent(), "UTF-8"));
+				JSONArray players = json.getJSONObject("response").getJSONArray("players");
+				players.forEach(f -> friendList.add(SteamPlayerSummary.fromJSON((JSONObject) f)));
+				EntityUtils.consume(entity);
+			} finally {
+				response.close();
+			}
+			
+			return friendList;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
 }
