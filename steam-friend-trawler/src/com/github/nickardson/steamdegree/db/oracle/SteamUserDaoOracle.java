@@ -42,6 +42,36 @@ public class SteamUserDaoOracle implements SteamUserDao {
 			return null;
 		}
 	}
+	
+	public List<SteamUser> getFriendsOfUser(long steamid) {
+		try {
+			PreparedStatement statement = ConnectionFactoryOracle
+					.getConnection().prepareStatement(
+							"SELECT b.* FROM " +
+									  "steam_friendship JOIN steam_user a ON (frienda = a.steamid) JOIN steam_user b ON (friendb = b.steamid) " +
+									  "WHERE frienda = ? " +
+									"UNION ALL " +
+									"SELECT a.* FROM " +
+									  "steam_friendship JOIN steam_user a ON (frienda = a.steamid) JOIN steam_user b ON (friendb = b.steamid) " +
+									  "WHERE friendb = ?");
+			statement.setLong(1, steamid);
+			statement.setLong(2, steamid);
+			
+			ResultSet results = statement.executeQuery();
+			
+			try {
+				return itemsFromResultSet(results);
+			} finally {
+				try { results.close(); } catch (SQLException ignore) { }
+				try { statement.close(); } catch (SQLException ignore) { }
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return null;
+		
+	}
 
 	@Override
 	public void createSteamUser(SteamUser steamUser) {

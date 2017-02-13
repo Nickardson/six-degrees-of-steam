@@ -103,7 +103,7 @@ public class FriendTrawler {
 		}
 	}
 	
-	public void updateStaleMetadataUsers(int n, int days) {
+	public int updateStaleMetadataUsers(int n, int days) {
 		List<SteamUser> staleUsers = new DaoFactoryOracle().getSteamUserDao().getStaleMetadataUsers(n, days);
 		long[] staleList = new long[staleUsers.size()];
 		for (int i = 0; i < staleUsers.size(); i++) {
@@ -112,13 +112,17 @@ public class FriendTrawler {
 		}
 		
 		updateUsers(staleList);
+		
+		return staleUsers.size();
 	}
 	
-	public void updateStaleFriendsListUsers(int n, int days) {
+	public int updateStaleFriendsListUsers(int n, int days) {
 		List<SteamUser> staleUsers = new DaoFactoryOracle().getSteamUserDao().getStaleFriendListUsers(n, days);
 		for (int i = 0; i < staleUsers.size(); i++) {
 			System.out.println("Stale user found: " + staleUsers.get(i));
 			discoverFriends(staleUsers.get(i).getSteamid());
 		}
+		
+		return staleUsers.size();
 	}
 }
