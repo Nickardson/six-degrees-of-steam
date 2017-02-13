@@ -20,6 +20,8 @@ public class SteamUser {
 			return character;
 		}
 	}
+
+	public static final int NO_LOCCITYID = 0;
 	
 	public SteamUser() {
 		
@@ -34,6 +36,14 @@ public class SteamUser {
 		this.avatar = avatar;
 		this.lastmetacrawl = lastmetacrawl;
 	}
+	
+	public SteamUser(long steamid, Date lastcrawl, Visibility visibility,
+			String name, String avatar, Date lastmetacrawl, String loccountrycode, String locstatecode, int loccityid) {
+		this(steamid, lastcrawl, visibility, name, avatar, lastmetacrawl);
+		setLoccountrycode(loccountrycode);
+		setLocstatecode(locstatecode);
+		setLoccityid(loccityid);
+	}
 
 	private long steamid;
 	private Date lastcrawl;
@@ -41,6 +51,9 @@ public class SteamUser {
 	private String name;
 	private String avatar;
 	private Date lastmetacrawl;
+	private String loccountrycode;
+	private String locstatecode;
+	private int loccityid = NO_LOCCITYID;
 	
 	public long getSteamid() {
 		return steamid;
@@ -89,11 +102,39 @@ public class SteamUser {
 	public void setLastmetacrawl(Date lastmetacrawl) {
 		this.lastmetacrawl = lastmetacrawl;
 	}
+	
+	public String getLoccountrycode() {
+		return loccountrycode;
+	}
+
+	public void setLoccountrycode(String loccountrycode) {
+		this.loccountrycode = loccountrycode;
+	}
+
+	public String getLocstatecode() {
+		return locstatecode;
+	}
+
+	public void setLocstatecode(String locstatecode) {
+		this.locstatecode = locstatecode;
+	}
+
+	public int getLoccityid() {
+		return loccityid;
+	}
+
+	public void setLoccityid(int loccityid) {
+		this.loccityid = loccityid;
+	}
 
 	@Override
 	public String toString() {
 		return "SteamUser [steamid=" + steamid + ", lastcrawl=" + lastcrawl
 				+ ", visibility=" + visibility + ", name=" + name + ", avatar="
-				+ avatar + ", lastmetacrawl=" + lastmetacrawl + "]";
+				+ avatar + ", lastmetacrawl=" + lastmetacrawl
+				+ ", loccountrycode=" + loccountrycode + ", locstatecode="
+				+ locstatecode + ", loccityid=" + loccityid + "]";
 	}
+
+	
 }

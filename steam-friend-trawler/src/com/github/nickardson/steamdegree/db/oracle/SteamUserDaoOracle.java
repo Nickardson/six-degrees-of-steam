@@ -46,8 +46,8 @@ public class SteamUserDaoOracle implements SteamUserDao {
 					.prepareStatement(
 							"INSERT INTO "
 									+ TABLE_NAME
-									+ " (steamid, lastcrawl, visibility, name, avatar, lastmetacrawl) "
-									+ "VALUES (?, ?, ?, ?, ?, ?)");
+									+ " (steamid, lastcrawl, visibility, name, avatar, lastmetacrawl, loccountrycode, locstatecode, loccityid) "
+									+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			statement.setLong(1, steamUser.getSteamid());
 			if (steamUser.getLastcrawl() != null) {
 				statement.setDate(2, new java.sql.Date(steamUser.getLastcrawl()
@@ -65,7 +65,14 @@ public class SteamUserDaoOracle implements SteamUserDao {
 			} else {
 				statement.setNull(6, Types.DATE);
 			}
-
+			statement.setString(7, steamUser.getLoccountrycode());
+			statement.setString(8, steamUser.getLocstatecode());
+			if (steamUser.getLoccityid() != SteamUser.NO_LOCCITYID) {
+				statement.setInt(9, steamUser.getLoccityid());
+			} else {
+				statement.setNull(9, Types.INTEGER);
+			}
+			
 			statement.executeUpdate();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -83,7 +90,7 @@ public class SteamUserDaoOracle implements SteamUserDao {
 							"UPDATE "
 									+ TABLE_NAME
 									+ " "
-									+ "SET lastcrawl = ?, visibility = ?, name = ?, avatar = ?, lastmetacrawl = ? "
+									+ "SET lastcrawl = ?, visibility = ?, name = ?, avatar = ?, lastmetacrawl = ?, loccountrycode = ?, locstatecode = ?, loccityid = ? "
 									+ "WHERE steamid = ?");
 			if (steamUser.getLastcrawl() != null) {
 				statement.setDate(1, new java.sql.Date(steamUser.getLastcrawl()
@@ -102,6 +109,14 @@ public class SteamUserDaoOracle implements SteamUserDao {
 				statement.setNull(5, Types.DATE);
 			}
 			statement.setLong(6, steamUser.getSteamid());
+			statement.setString(7, steamUser.getLoccountrycode());
+			statement.setString(8, steamUser.getLocstatecode());
+			if (steamUser.getLoccityid() != SteamUser.NO_LOCCITYID) {
+				statement.setInt(9, steamUser.getLoccityid());
+			} else {
+				statement.setNull(9, Types.INTEGER);
+			}
+			
 			statement.execute();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -134,8 +149,13 @@ public class SteamUserDaoOracle implements SteamUserDao {
 					visibilityFromChar(results.getString("Visibility").charAt(0)),
 					results.getString("Name"),
 					results.getString("Avatar"),
-					results.getDate("LastMetaCrawl", GregorianCalendar.getInstance())));
+					results.getDate("LastMetaCrawl", GregorianCalendar.getInstance()),
+					results.getString("loccountrycode"),
+					results.getString("locstatecode"),
+					results.getInt("loccityid")));
 		}
+		
+		results.close();
 
 		return items;
 	}
