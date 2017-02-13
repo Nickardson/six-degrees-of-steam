@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.json.JSONObject;
+
 import com.github.nickardson.steamdegree.Settings;
 
 public class ConnectionFactoryOracle {
@@ -19,7 +21,7 @@ public class ConnectionFactoryOracle {
 				Class.forName("oracle.jdbc.driver.OracleDriver");
 				
 				// TODO: should these be queried every time?
-				Settings settings = Settings.getConfigSettings();
+				JSONObject settings = Settings.getConfigSettings();
 				String url = settings.getString("dburl");
 				String username = settings.getString("dbuser");
 				String password = settings.getString("dbpass");
