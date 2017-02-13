@@ -83,6 +83,8 @@ public class SteamAPI {
 	public static List<SteamPlayerSummary> GetPlayerSummaries(long[] ids) {
 		if (ids.length > 100) {
 			throw new IllegalArgumentException("Maximum of 100 ids are allowed, got " + ids.length);
+		} else if (ids.length == 0) {
+			return new ArrayList<SteamPlayerSummary>(0);
 		}
 		
 		CloseableHttpClient client = HttpClients.createDefault();
