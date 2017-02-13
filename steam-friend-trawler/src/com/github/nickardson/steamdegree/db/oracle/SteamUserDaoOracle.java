@@ -3,6 +3,7 @@ package com.github.nickardson.steamdegree.db.oracle;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -13,7 +14,7 @@ import com.github.nickardson.steamdegree.db.SteamUserDao;
 
 public class SteamUserDaoOracle implements SteamUserDao {
 	private static final String TABLE_NAME = "steam_user";
-	
+
 	@Override
 	public SteamUser getSteamUser(long steamid) {
 		try {
@@ -22,9 +23,9 @@ public class SteamUserDaoOracle implements SteamUserDao {
 							"SELECT * FROM " + TABLE_NAME
 									+ " WHERE steamid = ?");
 			statement.setLong(1, steamid);
-			
+
 			ResultSet results = statement.executeQuery();
-			
+
 			List<SteamUser> users = itemsFromResultSet(results);
 			if (!users.isEmpty()) {
 				return users.get(0);
@@ -39,36 +40,106 @@ public class SteamUserDaoOracle implements SteamUserDao {
 
 	@Override
 	public void createSteamUser(SteamUser steamUser) {
-		// TODO Auto-generated method stub
+		try {
+			PreparedStatement statement = ConnectionFactoryOracle
+					.getConnection()
+					.prepareStatement(
+							"INSERT INTO "
+									+ TABLE_NAME
+									+ " (steamid, lastcrawl, visibility, name, avatar, lastmetacrawl) "
+									+ "VALUES (?, ?, ?, ?, ?, ?)");
+			statement.setLong(1, steamUser.getSteamid());
+			if (steamUser.getLastcrawl() != null) {
+				statement.setDate(2, new java.sql.Date(steamUser.getLastcrawl()
+						.getTime()));
+			} else {
+				statement.setNull(2, Types.DATE);
+			}
+			statement.setString(3,
+					charStringFromVisibility(steamUser.getVisibility()));
+			statement.setString(4, steamUser.getName());
+			statement.setString(5, steamUser.getAvatar());
+			if (steamUser.getLastmetacrawl() != null) {
+				statement.setDate(6, new java.sql.Date(steamUser
+						.getLastmetacrawl().getTime()));
+			} else {
+				statement.setNull(6, Types.DATE);
+			}
+
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 
 	@Override
 	public void updateSteamUser(SteamUser steamUser) {
-		// TODO Auto-generated method stub
-
+		try {
+			PreparedStatement statement = ConnectionFactoryOracle
+					.getConnection()
+					.prepareStatement(
+							"UPDATE "
+									+ TABLE_NAME
+									+ " "
+									+ "SET lastcrawl = ?, visibility = ?, name = ?, avatar = ?, lastmetacrawl = ? "
+									+ "WHERE steamid = ?");
+			if (steamUser.getLastcrawl() != null) {
+				statement.setDate(1, new java.sql.Date(steamUser.getLastcrawl()
+						.getTime()));
+			} else {
+				statement.setNull(1, Types.DATE);
+			}
+			statement.setString(2,
+					charStringFromVisibility(steamUser.getVisibility()));
+			statement.setString(3, steamUser.getName());
+			statement.setString(4, steamUser.getAvatar());
+			if (steamUser.getLastmetacrawl() != null) {
+				statement.setDate(5, new java.sql.Date(steamUser
+						.getLastmetacrawl().getTime()));
+			} else {
+				statement.setNull(5, Types.DATE);
+			}
+			statement.setLong(6, steamUser.getSteamid());
+			statement.execute();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void deleteSteamUser(SteamUser steamUser) {
-		// TODO Auto-generated method stub
-
+		try {
+			PreparedStatement statement = ConnectionFactoryOracle
+					.getConnection().prepareStatement(
+							"DELETE FROM " + TABLE_NAME + "WHERE steamid = ?");
+			statement.setLong(1, steamUser.getSteamid());
+			statement.execute();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	private List<SteamUser> itemsFromResultSet(ResultSet results) throws SQLException {
+	private List<SteamUser> itemsFromResultSet(ResultSet results)
+			throws SQLException {
 		List<SteamUser> items = new ArrayList<>();
-        
-        while (results.next()) {
-            items.add(new SteamUser(
-            		results.getLong("SteamID"), 
-                    results.getDate("LastCrawl", GregorianCalendar.getInstance()), 
-                    visibilityFromChar(results.getString("Visibility").charAt(0)), 
-                    results.getString("Name")));
-        }
-        
-        return items;
+
+		while (results.next()) {
+			items.add(new SteamUser(
+					results.getLong("SteamID"), 
+					results.getDate("LastCrawl", GregorianCalendar.getInstance()),
+					visibilityFromChar(results.getString("Visibility").charAt(0)),
+					results.getString("Name"),
+					results.getString("Avatar"),
+					results.getDate("LastMetaCrawl", GregorianCalendar.getInstance())));
+		}
+
+		return items;
 	}
-	
+
 	private SteamUser.Visibility visibilityFromChar(char c) {
 		switch (c) {
 		case 'Y':
@@ -78,5 +149,9 @@ public class SteamUserDaoOracle implements SteamUserDao {
 		default:
 			return Visibility.UNKNOWN;
 		}
+	}
+
+	private String charStringFromVisibility(Visibility visibility) {
+		return Character.toString(visibility.getCharacter());
 	}
 }
