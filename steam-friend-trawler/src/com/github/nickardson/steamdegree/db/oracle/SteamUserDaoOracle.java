@@ -117,14 +117,14 @@ public class SteamUserDaoOracle implements SteamUserDao {
 			} else {
 				statement.setNull(5, Types.DATE);
 			}
-			statement.setLong(6, steamUser.getSteamid());
-			statement.setString(7, steamUser.getLoccountrycode());
-			statement.setString(8, steamUser.getLocstatecode());
+			statement.setString(6, steamUser.getLoccountrycode());
+			statement.setString(7, steamUser.getLocstatecode());
 			if (steamUser.getLoccityid() != SteamUser.NO_LOCCITYID) {
-				statement.setInt(9, steamUser.getLoccityid());
+				statement.setInt(8, steamUser.getLoccityid());
 			} else {
-				statement.setNull(9, Types.INTEGER);
+				statement.setNull(8, Types.INTEGER);
 			}
+			statement.setLong(9, steamUser.getSteamid());
 			
 			try {
 				statement.execute();
