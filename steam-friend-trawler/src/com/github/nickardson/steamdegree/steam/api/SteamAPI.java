@@ -1,8 +1,14 @@
 package com.github.nickardson.steamdegree.steam.api;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -23,18 +29,86 @@ public class SteamAPI {
 	 * The number of daily requests allowed.
 	 */
 	private static final int MAX_REQUESTS = 100_000;
-	// TODO: honor the max requests limit.
 	
 	/**
 	 * The number of requests allowed in a second. ie 0.5 being one request every 2 seconds.
 	 */
 	private static final float REQUESTS_PER_SECOND = 200 / 5.0f / 60.0f; // 200 requests per 5 minutes.
-	// TODO: honor the rate limit.
 	
 	private static final String API_KEY;
 	private static final String HOST = "http://api.steampowered.com";
 	static {
 		API_KEY = Settings.getConfigSettings().getString("steamapikey");
+	}
+	
+	private static long lastCall;
+	private static RateInfo rateInfo = new RateInfo();
+	
+	static {
+		try {
+			restoreRateInfo();
+			System.out.println("Rate Info: " + rateInfo);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Ensures rate limiting and volume limiting.
+	 */
+	private static void preAPI() {
+		final long msBetween = (long) (1000 / REQUESTS_PER_SECOND);
+		long nowBefore = System.currentTimeMillis();
+		if (nowBefore - lastCall < msBetween) {
+			long timeToWait = (long) (lastCall - nowBefore + msBetween);
+			try {
+				Thread.sleep(timeToWait);
+			} catch (InterruptedException ignored) {}
+		}
+		
+		lastCall = System.currentTimeMillis();
+		
+		if (rateInfo.getCalls() >= MAX_REQUESTS) {
+			throw new IllegalStateException("API call limit exceeded.");
+		} else {
+			rateInfo.countup();
+			try {
+				saveRateInfo();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private static void saveRateInfo() throws IOException {
+		try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("rateinfo.dat"))) {
+			out.writeObject(rateInfo);
+		}
+	}
+	
+	private static void restoreRateInfo() throws IOException {
+		File inFile = new File("rateinfo.dat");
+		if (inFile.exists() && inFile.isFile()) {
+			try (ObjectInputStream input = new ObjectInputStream(new FileInputStream(inFile))) {
+				try {
+					rateInfo = (RateInfo) input.readObject();
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} else {
+			rateInfo = new RateInfo(new Date(), 0);
+		}
+	}
+	
+	/**
+	 * An empty "API Call" which still triggers the rate limiting and request count limiting.
+	 */
+	public static void FakeApiCall() {
+		System.out.println("Attempt API call....");
+		preAPI();
+		System.out.println("\tAPI called.");
 	}
 	
 	public static List<SteamFriend> GetFriendList(long steamid) {
@@ -55,6 +129,8 @@ public class SteamAPI {
 		}
 		
 		try {
+			preAPI();
+			
 			CloseableHttpResponse response = client.execute(req);
 			
 			List<SteamFriend> friendList = new ArrayList<>();
@@ -112,6 +188,8 @@ public class SteamAPI {
 		}
 		
 		try {
+			preAPI();
+			
 			CloseableHttpResponse response = client.execute(req);
 			
 			List<SteamPlayerSummary> friendList = new ArrayList<>();
