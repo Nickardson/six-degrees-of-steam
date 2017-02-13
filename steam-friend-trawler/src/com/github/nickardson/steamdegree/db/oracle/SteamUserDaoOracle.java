@@ -26,11 +26,16 @@ public class SteamUserDaoOracle implements SteamUserDao {
 
 			ResultSet results = statement.executeQuery();
 
-			List<SteamUser> users = itemsFromResultSet(results);
-			if (!users.isEmpty()) {
-				return users.get(0);
-			} else {
-				return null;
+			try {
+				List<SteamUser> users = itemsFromResultSet(results);
+				if (!users.isEmpty()) {
+					return users.get(0);
+				} else {
+					return null;
+				}
+			} finally {
+				try { results.close(); } catch (SQLException ignore) { }
+				try { statement.close(); } catch (SQLException ignore) { }
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -73,7 +78,11 @@ public class SteamUserDaoOracle implements SteamUserDao {
 				statement.setNull(9, Types.INTEGER);
 			}
 			
-			statement.executeUpdate();
+			try {
+				statement.executeUpdate();
+			} finally {
+				statement.close();
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -117,7 +126,11 @@ public class SteamUserDaoOracle implements SteamUserDao {
 				statement.setNull(9, Types.INTEGER);
 			}
 			
-			statement.execute();
+			try {
+				statement.execute();
+			} finally {
+				statement.close();
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -131,7 +144,12 @@ public class SteamUserDaoOracle implements SteamUserDao {
 					.getConnection().prepareStatement(
 							"DELETE FROM " + TABLE_NAME + "WHERE steamid = ?");
 			statement.setLong(1, steamUser.getSteamid());
-			statement.execute();
+			
+			try {
+				statement.execute();
+			} finally {
+				statement.close();
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -154,8 +172,6 @@ public class SteamUserDaoOracle implements SteamUserDao {
 					results.getString("locstatecode"),
 					results.getInt("loccityid")));
 		}
-		
-		results.close();
 
 		return items;
 	}

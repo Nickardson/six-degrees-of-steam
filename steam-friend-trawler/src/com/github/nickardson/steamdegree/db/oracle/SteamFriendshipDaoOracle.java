@@ -24,16 +24,23 @@ public class SteamFriendshipDaoOracle implements SteamFriendshipDao {
 			
 			ResultSet results = statement.executeQuery();
 			
-			List<SteamFriendship> friendships = itemsFromResultSet(results);
-			if (!friendships.isEmpty()) {
-				return friendships.get(0);
-			} else {
-				return null;
+			try {
+				List<SteamFriendship> friendships = itemsFromResultSet(results);
+				
+				if (!friendships.isEmpty()) {
+					return friendships.get(0);
+				} else {
+					return null;
+				}
+			} finally {
+				try { results.close(); } catch (SQLException ignore) { }
+				try { statement.close(); } catch (SQLException ignore) { }
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
 		}
+		
+		return null;
 	}
 
 	@Override
@@ -46,7 +53,11 @@ public class SteamFriendshipDaoOracle implements SteamFriendshipDao {
 			statement.setLong(1, friendship.getFriendA());
 			statement.setLong(2, friendship.getFriendB());
 			
-			statement.execute();
+			try {
+				statement.execute();
+			} finally {
+				statement.close();
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -57,10 +68,16 @@ public class SteamFriendshipDaoOracle implements SteamFriendshipDao {
 		try {
 			PreparedStatement statement = ConnectionFactoryOracle
 					.getConnection().prepareStatement(
-							"DELETE FROM " + TABLE_NAME + "WHERE frienda = ? AND friendb = ?");
+							"DELETE FROM " + TABLE_NAME
+									+ "WHERE frienda = ? AND friendb = ?");
 			statement.setLong(1, friendship.getFriendA());
 			statement.setLong(2, friendship.getFriendB());
-			statement.execute();
+			
+			try {
+				statement.execute();
+			} finally {
+				statement.close();
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
