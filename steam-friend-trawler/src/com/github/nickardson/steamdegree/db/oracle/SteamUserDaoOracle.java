@@ -190,4 +190,42 @@ public class SteamUserDaoOracle implements SteamUserDao {
 	private String charStringFromVisibility(Visibility visibility) {
 		return Character.toString(visibility.getCharacter());
 	}
+	
+	@Override
+	public List<SteamUser> getStaleFriendListUsers(int n, int days) {
+		return getStaleNListUsers("lastcrawl", n, days);
+	}
+	
+	@Override
+	public List<SteamUser> getStaleMetadataUsers(int n, int days) {
+		return getStaleNListUsers("lastmetacrawl", n, days);
+	}
+	
+	private List<SteamUser> getStaleNListUsers(String column, int n, int days) {
+		try {
+			PreparedStatement statement = ConnectionFactoryOracle
+					.getConnection().prepareStatement(
+							"SELECT * FROM "
+									+ "(SELECT DISTINCT * FROM " + TABLE_NAME + " "
+									+ "WHERE NVL(" + column + ", TO_DATE('1970-01-01', 'YYYY-MM-DD')) < SYSDATE - " + days + " "
+									+ "ORDER BY NVL(" + column + ", TO_DATE('1970-01-01', 'YYYY-MM-DD')) ASC) "
+									+ "WHERE rownum <= " + n);
+			System.out.println("SELECT * FROM "
+									+ "(SELECT DISTINCT * FROM " + TABLE_NAME + " "
+									+ "WHERE NVL(" + column + ", TO_DATE('1970-01-01', 'YYYY-MM-DD')) < SYSDATE - " + days + " "
+									+ "ORDER BY NVL(" + column + ", TO_DATE('1970-01-01', 'YYYY-MM-DD')) ASC) "
+									+ "WHERE rownum <= " + n + ";");
+			ResultSet results = statement.executeQuery();
+
+			try {
+				return itemsFromResultSet(results);
+			} finally {
+				try { results.close(); } catch (SQLException ignore) { }
+				try { statement.close(); } catch (SQLException ignore) { }
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

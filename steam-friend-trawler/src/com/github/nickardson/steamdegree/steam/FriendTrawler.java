@@ -1,6 +1,5 @@
 package com.github.nickardson.steamdegree.steam;
 
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
@@ -9,8 +8,8 @@ import com.github.nickardson.steamdegree.db.SteamFriendship;
 import com.github.nickardson.steamdegree.db.SteamFriendshipDao;
 import com.github.nickardson.steamdegree.db.SteamUser;
 import com.github.nickardson.steamdegree.db.SteamUser.Visibility;
+import com.github.nickardson.steamdegree.db.oracle.DaoFactoryOracle;
 import com.github.nickardson.steamdegree.db.SteamUserDao;
-import com.github.nickardson.steamdegree.db.oracle.ConnectionFactoryOracle;
 import com.github.nickardson.steamdegree.steam.api.SteamAPI;
 import com.github.nickardson.steamdegree.steam.api.SteamFriend;
 import com.github.nickardson.steamdegree.steam.api.SteamPlayerSummary;
@@ -22,7 +21,6 @@ public class FriendTrawler {
 	 * @param steamid
 	 */
 	public void discoverFriends(long steamid) {
-		System.out.println("Discover friends of " + steamid);
 		SteamUserDao userDB = ConsoleMain.daoFactory.getSteamUserDao();
 		SteamFriendshipDao friendDB = ConsoleMain.daoFactory.getSteamFriendshipDao();
 		
@@ -37,23 +35,18 @@ public class FriendTrawler {
 			userDB.createSteamUser(thatUser);
 		}
 		
-		System.out.println("That user is " + thatUser);
-		
 		List<SteamFriend> friends = SteamAPI.GetFriendList(steamid);
 		
 		for (SteamFriend friend : friends) {
 			SteamUser friendUser = userDB.getSteamUser(friend.getSteamid());
-			System.out.println("\tFriend: " + friendUser);
 			
 			if (friendUser == null) {
-				System.out.println("\t\tMust create.");
 				// friend does not yet exist, create them
 				friendUser = new SteamUser();
 				friendUser.setSteamid(friend.getSteamid());
 				userDB.createSteamUser(friendUser);
 			} else {
 				// friend already exists.
-				System.out.println("\t\tAlready exists.");
 			}
 			
 			// check for, and possibly create relationship entity
@@ -66,13 +59,9 @@ public class FriendTrawler {
 			}
 		}
 		
-		System.out.println("Done with friends.");
-		
 		// All friends successfully registered, now update the last crawl time for our user.
 		thatUser.setLastcrawl(now);
 		userDB.updateSteamUser(thatUser);
-		
-		System.out.println("Done updating.");
 	}
 	
 	public void updateUsers(long[] users) {
@@ -106,15 +95,30 @@ public class FriendTrawler {
 			
 			outUser.setLastmetacrawl(now);
 			
-			System.out.println("in:  " + inUser);
-			System.out.println("out: " + outUser);
 			if (inUser == null) {
-				System.out.println("creating new");
 				userDB.createSteamUser(outUser);
 			} else {
-				System.out.println("updating old");
 				userDB.updateSteamUser(outUser);
 			}
+		}
+	}
+	
+	public void updateStaleMetadataUsers(int n, int days) {
+		List<SteamUser> staleUsers = new DaoFactoryOracle().getSteamUserDao().getStaleMetadataUsers(n, days);
+		long[] staleList = new long[staleUsers.size()];
+		for (int i = 0; i < staleUsers.size(); i++) {
+			System.out.println("Stale user found: " + staleUsers.get(i));
+			staleList[i] = staleUsers.get(i).getSteamid();
+		}
+		
+		updateUsers(staleList);
+	}
+	
+	public void updateStaleFriendsListUsers(int n, int days) {
+		List<SteamUser> staleUsers = new DaoFactoryOracle().getSteamUserDao().getStaleFriendListUsers(n, days);
+		for (int i = 0; i < staleUsers.size(); i++) {
+			System.out.println("Stale user found: " + staleUsers.get(i));
+			discoverFriends(staleUsers.get(i).getSteamid());
 		}
 	}
 }
